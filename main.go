@@ -92,7 +92,7 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 	thirdpartyPkg := []*ast.ImportSpec{}
 	appPkg := []*ast.ImportSpec{}
 
-	lowestPos := token.Pos(9999999999)
+	lowestPos := token.Pos(MaxInt)
 	for _, spec := range specs {
 		switch im := spec.(type) {
 		case *ast.ImportSpec:
@@ -258,3 +258,14 @@ type Sorter struct {
 	fset     *token.FileSet
 	f        *ast.File
 }
+
+const (
+	MaxUint64 = ^uint64(0)
+	MinUint64 = 0
+	MaxInt64  = int64(MaxUint64 >> 1)
+	MinInt64  = -MaxInt64 - 1
+	MaxUint   = ^uint(0)
+	MinUint   = 0
+	MaxInt    = int(MaxUint >> 1)
+	MinInt    = -MaxInt - 1
+)
