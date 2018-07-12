@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-var rootPkg = flag.String("pkg", "", "sort package")
+var rootPkg = flag.String("local", "", "sort package")
 
 func main() {
 	flag.Parse()
@@ -200,7 +200,7 @@ func setPos(pos token.Pos, im *ast.ImportSpec) {
 		return
 	}
 
-	log.Printf("set %v to %d", im.Path.Value, pos)
+	// log.Printf("set %v to %d", im.Path.Value, pos)
 	im.Path.ValuePos = pos
 	im.EndPos = im.Path.ValuePos + token.Pos(len(im.Path.Value))
 }
