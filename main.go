@@ -259,6 +259,7 @@ type Sorter struct {
 	f        *ast.File
 }
 
+// interger const
 const (
 	MaxUint64 = ^uint64(0)
 	MinUint64 = 0
