@@ -16,13 +16,13 @@ import (
 	"strings"
 )
 
-var rootPkg = flag.String("local", "", "sort package")
+var rootPkg = flag.String("local", "", "local package name")
 
 func main() {
 	flag.Parse()
 	if len(*rootPkg) <= 0 {
 		flag.Usage()
-		log.Fatalln("pkg must set")
+		log.Fatalln("local must set")
 	}
 	files := os.Args[3:]
 

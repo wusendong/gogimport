@@ -5,9 +5,8 @@ golang grouping import tool
 
 gogimport will grouping imports by stdlib, thirdparty, custom packages like the example below:
 
-
 ```sh
-$ gogimport -pkg github.com/wusendong/example main.go
+$ gogimport -local github.com/wusendong/example main.go
 ```
 
 ```go
@@ -26,9 +25,20 @@ import (
 ```
 
 
+### install
+```
+go get -u github.com/wusendong/gogimport
+```
+
+
 ### usage
 ```
 Usage of gogimport:
-  -pkg string
-        custom package
+gogimport [options] [file ...]
+
+Options:
+  -local string
+        local package name
+Example command:
+gogimport -local ${packaname} some.go other.go
 ```
