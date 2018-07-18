@@ -120,7 +120,9 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
 		lowestPos++
 	}
-	st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+	if len(innerPkg) > 0 {
+		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+	}
 	for _, im := range thirdpartyPkg {
 		results = append(results, im)
 		lenth := im.End() - im.Pos()
@@ -129,7 +131,9 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
 		lowestPos++
 	}
-	st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+	if len(thirdpartyPkg) > 0 {
+		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+	}
 	for _, im := range appPkg {
 		results = append(results, im)
 		lenth := im.End() - im.Pos()
@@ -138,7 +142,9 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
 		lowestPos++
 	}
-	st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+	if len(appPkg) > 0 {
+		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+	}
 
 	// verify validity of lines table
 	size := cf.Size()
