@@ -175,8 +175,10 @@ func (st *Sorter) Init() error {
 		return err
 	}
 
+	parserMode := parser.ParseComments | parser.AllErrors
+
 	st.fset = token.NewFileSet()
-	st.f, err = parser.ParseFile(st.fset, st.filename, nil, 0)
+	st.f, err = parser.ParseFile(st.fset, st.filename, nil, parserMode)
 	if err != nil {
 		log.Printf("parse file error %s", err.Error())
 		return err
@@ -187,7 +189,7 @@ func (st *Sorter) Init() error {
 func (st *Sorter) Write() error {
 
 	var buf = &bytes.Buffer{}
-	if err := (&printer.Config{Tabwidth: 8}).Fprint(buf, st.fset, st.f); err != nil {
+	if err := printer.Fprint(buf, st.fset, st.f); err != nil {
 		return err
 	}
 	out, err := format.Source(buf.Bytes())
