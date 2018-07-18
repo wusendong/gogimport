@@ -175,7 +175,7 @@ func (st *Sorter) Init() error {
 		return err
 	}
 
-	parserMode := parser.ParseComments | parser.AllErrors
+	parserMode := parser.ParseComments
 
 	st.fset = token.NewFileSet()
 	st.f, err = parser.ParseFile(st.fset, st.filename, nil, parserMode)
