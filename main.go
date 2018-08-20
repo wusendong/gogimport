@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"flag"
 	"go/ast"
 	"go/format"
@@ -35,7 +36,7 @@ func main() {
 
 		err := st.Init()
 		if err != nil {
-			log.Printf("init error %s", err.Error())
+			log.Printf("init error: %s", err.Error())
 			continue
 		}
 
@@ -169,9 +170,12 @@ func plugPos(p *token.Pos) token.Pos {
 
 func (st *Sorter) Init() error {
 	var err error
+	err = preInsertLines(st.filename)
+	if err != nil {
+		return err
+	}
 	st.lines, err = getLines(st.filename)
 	if err != nil {
-		log.Printf("get file lines error %s", err.Error())
 		return err
 	}
 
@@ -180,7 +184,7 @@ func (st *Sorter) Init() error {
 	st.fset = token.NewFileSet()
 	st.f, err = parser.ParseFile(st.fset, st.filename, nil, parserMode)
 	if err != nil {
-		log.Printf("parse file error %s", err.Error())
+		log.Printf("parse file error :%s", err.Error())
 		return err
 	}
 	return nil
@@ -216,7 +220,7 @@ func setPos(pos token.Pos, im *ast.ImportSpec) {
 func getLines(filename string) ([]int, error) {
 	file, err := os.Open(filename)
 	if nil != err {
-		return nil, err
+		return nil, errors.New("open file " + filename + " error: " + err.Error())
 	}
 	defer file.Close()
 	rd := bufio.NewScanner(file)
@@ -227,6 +231,20 @@ func getLines(filename string) ([]int, error) {
 		lines = append(lines, offset)
 	}
 	return lines[:len(lines)-1], nil
+}
+
+func preInsertLines(filename string) error {
+	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND, 644)
+	if nil != err {
+		return errors.New("open file " + filename + " error: " + err.Error())
+	}
+
+	defer file.Close()
+	_, err = file.WriteString("\n\n\n")
+	if err != nil {
+		return errors.New("preInsertLines file " + filename + " error: " + err.Error())
+	}
+	return nil
 }
 
 func addline(lines []int, offset ...int) []int {
