@@ -27,14 +27,20 @@ func main() {
 	}
 	files := os.Args[3:]
 
-	for _, file := range files {
+	for _, filename := range files {
 		st := &Sorter{
-			filename: file,
+			filename: filename,
 			rootPkg:  *rootPkg,
 		}
 		log.Printf("sort import for %s %s", st.rootPkg, st.filename)
 
-		err := st.Init()
+		file, err := os.OpenFile(filename, os.O_RDWR, 644)
+		if nil != err {
+			log.Print("open file " + filename + " error: " + err.Error())
+		}
+		defer file.Close()
+
+		err = st.init(file)
 		if err != nil {
 			log.Printf("init error: %s", err.Error())
 			continue
@@ -42,7 +48,7 @@ func main() {
 
 		st.sortImports()
 
-		err = st.Write()
+		err = st.Write(file)
 		if err != nil {
 			log.Printf("write error %s", err.Error())
 			continue
@@ -168,13 +174,16 @@ func plugPos(p *token.Pos) token.Pos {
 	return *p
 }
 
-func (st *Sorter) Init() error {
+func (st *Sorter) init(file *os.File) error {
 	var err error
-	err = preInsertLines(st.filename)
+
+	src, err := ioutil.ReadAll(file)
 	if err != nil {
-		return err
+		return errors.New("read file " + st.filename + " error: " + err.Error())
 	}
-	st.lines, err = getLines(st.filename)
+	src = append(src, []byte("\n\n\n")...)
+
+	st.lines, err = getLines(src)
 	if err != nil {
 		return err
 	}
@@ -182,7 +191,7 @@ func (st *Sorter) Init() error {
 	parserMode := parser.ParseComments
 
 	st.fset = token.NewFileSet()
-	st.f, err = parser.ParseFile(st.fset, st.filename, nil, parserMode)
+	st.f, err = parser.ParseFile(st.fset, "", src, parserMode)
 	if err != nil {
 		log.Printf("parse file error :%s", err.Error())
 		return err
@@ -190,8 +199,7 @@ func (st *Sorter) Init() error {
 	return nil
 }
 
-func (st *Sorter) Write() error {
-
+func (st *Sorter) Write(file *os.File) error {
 	var buf = &bytes.Buffer{}
 	if err := printer.Fprint(buf, st.fset, st.f); err != nil {
 		return err
@@ -200,7 +208,16 @@ func (st *Sorter) Write() error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(st.filename, out, 644)
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+	err = file.Truncate(int64(buf.Len()))
+	if err != nil {
+		return err
+	}
+	_, err = file.Write(out)
+	return err
 }
 
 func setPos(pos token.Pos, im *ast.ImportSpec) {
@@ -217,13 +234,8 @@ func setPos(pos token.Pos, im *ast.ImportSpec) {
 	im.EndPos = im.Path.ValuePos + token.Pos(len(im.Path.Value))
 }
 
-func getLines(filename string) ([]int, error) {
-	file, err := os.Open(filename)
-	if nil != err {
-		return nil, errors.New("open file " + filename + " error: " + err.Error())
-	}
-	defer file.Close()
-	rd := bufio.NewScanner(file)
+func getLines(data []byte) ([]int, error) {
+	rd := bufio.NewScanner(bytes.NewBuffer(data))
 	offset := 0
 	lines := []int{offset}
 	for rd.Scan() {
@@ -231,20 +243,6 @@ func getLines(filename string) ([]int, error) {
 		lines = append(lines, offset)
 	}
 	return lines[:len(lines)-1], nil
-}
-
-func preInsertLines(filename string) error {
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_APPEND, 644)
-	if nil != err {
-		return errors.New("open file " + filename + " error: " + err.Error())
-	}
-
-	defer file.Close()
-	_, err = file.WriteString("\n\n\n")
-	if err != nil {
-		return errors.New("preInsertLines file " + filename + " error: " + err.Error())
-	}
-	return nil
 }
 
 func addline(lines []int, offset ...int) []int {
@@ -277,6 +275,7 @@ var thirdpartyPrefix = []string{
 	"gopkg",
 }
 
+// Sorter gogimport sorter
 type Sorter struct {
 	filename string
 	rootPkg  string
