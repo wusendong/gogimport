@@ -119,6 +119,7 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 	}
 
 	cf := st.fset.File(st.f.Pos())
+	// inner package first
 	for _, im := range innerPkg {
 		results = append(results, im)
 		lenth := im.End() - im.Pos()
@@ -130,17 +131,8 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 	if len(innerPkg) > 0 {
 		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
 	}
-	for _, im := range thirdpartyPkg {
-		results = append(results, im)
-		lenth := im.End() - im.Pos()
-		setPos(lowestPos, im)
-		lowestPos += lenth
-		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
-		lowestPos++
-	}
-	if len(thirdpartyPkg) > 0 {
-		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
-	}
+
+	// local package second
 	for _, im := range appPkg {
 		results = append(results, im)
 		lenth := im.End() - im.Pos()
@@ -150,6 +142,19 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		lowestPos++
 	}
 	if len(appPkg) > 0 {
+		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+	}
+
+	// third party third
+	for _, im := range thirdpartyPkg {
+		results = append(results, im)
+		lenth := im.End() - im.Pos()
+		setPos(lowestPos, im)
+		lowestPos += lenth
+		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
+		lowestPos++
+	}
+	if len(thirdpartyPkg) > 0 {
 		st.lines = addline(st.lines, cf.Position(plugPos(&lowestPos)).Offset)
 	}
 
