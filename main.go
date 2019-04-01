@@ -28,31 +28,35 @@ func main() {
 	files := os.Args[3:]
 
 	for _, filename := range files {
-		st := &Sorter{
-			filename: filename,
-			rootPkg:  *rootPkg,
-		}
-		log.Printf("sort import for %s %s", st.rootPkg, st.filename)
+		sortFile(filename)
+	}
+}
 
-		file, err := os.OpenFile(filename, os.O_RDWR, 644)
-		if nil != err {
-			log.Print("open file " + filename + " error: " + err.Error())
-		}
-		defer file.Close()
+func sortFile(filename string) {
+	st := &Sorter{
+		filename: filename,
+		rootPkg:  *rootPkg,
+	}
+	log.Printf("sort import for %s %s", st.rootPkg, st.filename)
 
-		err = st.init(file)
-		if err != nil {
-			log.Printf("init error: %s", err.Error())
-			continue
-		}
+	file, err := os.OpenFile(filename, os.O_RDWR, 644)
+	if nil != err {
+		log.Print("open file " + filename + " error: " + err.Error())
+	}
+	defer file.Close()
 
-		st.sortImports()
+	err = st.init(file)
+	if err != nil {
+		log.Printf("init error: %s", err.Error())
+		return
+	}
 
-		err = st.Write(file)
-		if err != nil {
-			log.Printf("write error %s", err.Error())
-			continue
-		}
+	st.sortImports()
+
+	err = st.Write(file)
+	if err != nil {
+		log.Printf("write error %s", err.Error())
+		return
 	}
 }
 
