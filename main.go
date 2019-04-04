@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"container/list"
 	"errors"
 	"flag"
 	"fmt"
@@ -363,3 +364,82 @@ const (
 	MaxInt    = int(MaxUint >> 1)
 	MinInt    = -MaxInt - 1
 )
+
+// func mm(src []byte) (err error) {
+// 	src, err = format.Source(src)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	lines := bytes.Split(src, []byte{'\r'})
+// 	l := list.New()
+// 	for _, line := range lines {
+// 		l.PushBack(line)
+// 	}
+// 	findImport(l)
+
+// 	return nil
+// }
+
+var importOnePrefix = []byte("import")
+var importMutiPrefix = []byte("import (")
+var importEnd = []byte{')'}
+
+func findImport(lines *list.List) {
+	head := findImportLine(lines.Front())
+	if head == nil {
+		return
+	}
+	line := head.Next()
+	for {
+		if !bytes.HasPrefix(line.Value.([]byte), importEnd) {
+			break
+		}
+
+	}
+
+}
+
+func findImportLine(head *list.Element) *list.Element {
+	for head != nil && !bytes.HasPrefix(head.Value.([]byte), importMutiPrefix) {
+		head = head.Next()
+	}
+	return head
+}
+
+var newline = []byte{'\t', '\n', '\n'}
+
+func sortLinkedList(lines *list.List, head *list.Element, localPrefix string) *list.Element {
+	std := lines.InsertBefore(newline, head)
+	local := lines.InsertBefore(newline, head)
+	thirdparty := lines.InsertBefore(newline, head)
+
+	for ; head != nil && !bytes.HasPrefix(head.Value.([]byte), importEnd); head = head.Next() {
+		pkg := getImportPkg(head.Value.([]byte))
+		switch {
+		case stdPkgs[pkg]:
+			lines.MoveAfter(head, std)
+		case strings.HasPrefix(pkg, localPrefix):
+			lines.MoveAfter(head, local)
+		default:
+			lines.MoveAfter(head, thirdparty)
+		}
+	}
+	return head
+
+}
+
+func getImportPkg(a []byte) string {
+	index := bytes.Index(a, []byte{'"'})
+	if index > 0 {
+		return string(bytes.Trim(bytes.TrimSpace(a[index:]), `"`))
+	}
+	return string(bytes.Trim(bytes.TrimSpace(a), `"`))
+}
+
+func listToBuffer(head *list.Element) *bytes.Buffer {
+	buf := bytes.Buffer{}
+	for head.Next() != nil {
+		buf.Write(head.Value.([]byte))
+	}
+	return &buf
+}
