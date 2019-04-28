@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func Test_getImportPkg(t *testing.T) {
@@ -54,17 +55,23 @@ func Test_getImportPkg(t *testing.T) {
 func Test_sortLinkedList(t *testing.T) {
 	var localPrefix = "gogimport"
 
+	err := initStdPkg()
+	if err != nil {
+		t.Fatalf("init std package failed: %v", err)
+	}
+
 	var buildLineList = func(content string) *list.List {
 		l := list.New()
 		for _, line := range strings.Split(content, "\n") {
 			l.PushBack([]byte(line))
 		}
+
 		return l
 	}
 
-	l1 := buildLineList(`package
-
-import "io"`)
+	go func() {
+		time.AfterFunc(time.Second*11, func() { panic("ot") })
+	}()
 
 	l2 := buildLineList(`package
 
@@ -87,33 +94,29 @@ import (
 		{
 			"",
 			args{
-				l1,
-				l1.Front().Next().Next(),
-			},
-			`package
-
-import "io"`,
-		},
-		{
-			"",
-			args{
 				l2,
-				l2.Front().Next().Next(),
+				l2.Front().Next().Next().Next(),
 			},
 			`package
 
 import (
-	"github.com/sirusen/barabra"
 	"io"
+
+
 	"gogimport/pkg1"
 	"gogimport/pkg2"
+
+
+	"github.com/sirusen/barabra"
+
+
 )`,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := sortLinkedList(tt.args.lines, tt.args.head, localPrefix); listToBuffer(tt.args.lines.Front()).String() != tt.want {
-				t.Errorf("sortLinkedList() = %v, want %v", got, tt.want)
+			if sortImport(tt.args.lines, tt.args.head, localPrefix); listToBuffer(tt.args.lines.Front()).String() != tt.want {
+				t.Errorf("sortLinkedList() = %v, want %v", listToBuffer(tt.args.lines.Front()).String(), tt.want)
 			}
 		})
 	}
