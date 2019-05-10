@@ -70,15 +70,8 @@ func (st *Sorter) sortImports() {
 		loffset := cf.Position(d.Lparen).Offset
 		roffset := cf.Position(d.Rparen).Offset
 		st.lines = deleteLinesRange(st.lines, loffset, roffset)
-		i := 0
 		specs := d.Specs[:0]
-		for j, s := range d.Specs {
-			if j > i && st.fset.Position(s.Pos()).Line > 1+st.fset.Position(d.Specs[j-1].End()).Line {
-				specs = append(specs, st.sortSpecs(d.Specs[i:j])...)
-				i = j
-			}
-		}
-		specs = append(specs, st.sortSpecs(d.Specs[i:])...)
+		specs = append(specs, st.sortSpecs(d.Specs[0:])...)
 		d.Specs = specs
 	}
 }
@@ -98,7 +91,6 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 	innerPkg := []*ast.ImportSpec{}
 	thirdpartyPkg := []*ast.ImportSpec{}
 	appPkg := []*ast.ImportSpec{}
-
 	lowestPos := token.Pos(MaxInt)
 	for _, spec := range specs {
 		switch im := spec.(type) {
@@ -117,7 +109,6 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 			log.Printf("default %v", im)
 		}
 	}
-
 	cf := st.fset.File(st.f.Pos())
 	// inner package first
 	for _, im := range innerPkg {
@@ -278,6 +269,8 @@ var thirdpartyPrefix = []string{
 	"github",
 	"gitlab",
 	"gopkg",
+	"golang",
+	"google.golang.org",
 }
 
 // Sorter gogimport sorter
