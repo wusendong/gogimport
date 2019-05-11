@@ -13,46 +13,59 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 )
+
+const defaultLocal = "code.yunzhanghu.com"
 
 var rootPkg = flag.String("local", "", "local package name")
 
 func main() {
 	flag.Parse()
-	if len(*rootPkg) <= 0 {
-		flag.Usage()
-		log.Fatalln("local must set")
+	argIdx := 3
+	if *rootPkg == "" {
+		*rootPkg = defaultLocal
+		argIdx = 1
 	}
-	files := os.Args[3:]
+	files := os.Args[argIdx:]
 
-	for _, filename := range files {
-		st := &Sorter{
-			filename: filename,
-			rootPkg:  *rootPkg,
-		}
-		log.Printf("sort import for %s %s", st.rootPkg, st.filename)
+	for _, fileName := range files {
+		formatFile(fileName)
+	}
+}
 
-		file, err := os.OpenFile(filename, os.O_RDWR, 644)
-		if nil != err {
-			log.Print("open file " + filename + " error: " + err.Error())
-		}
-		defer file.Close()
+func formatFile(fileName string) {
+	st := &Sorter{
+		filename: fileName,
+		rootPkg:  *rootPkg,
+	}
+	log.Printf("sort import for %s %s", st.rootPkg, st.filename)
 
-		err = st.init(file)
+	file, err := os.OpenFile(fileName, os.O_RDWR, 644)
+	if nil != err {
+		log.Printf("open file=%s err=%v", fileName, err)
+	}
+	defer func() {
+		err := file.Close()
 		if err != nil {
-			log.Printf("init error: %s", err.Error())
-			continue
+			log.Printf("close file=%s, err=%v", fileName, err)
 		}
+	}()
 
-		st.sortImports()
+	err = st.init(file)
+	if err != nil {
+		log.Printf("init error: %v", err.Error())
+		return
+	}
 
-		err = st.Write(file)
-		if err != nil {
-			log.Printf("write error %s", err.Error())
-			continue
-		}
+	st.sortImports()
+
+	err = st.Write(file)
+	if err != nil {
+		log.Printf("write error %v", err.Error())
+		return
 	}
 }
 
@@ -97,7 +110,7 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		case *ast.ImportSpec:
 			if strings.HasPrefix(im.Path.Value, `"`+st.rootPkg) {
 				appPkg = append(appPkg, im)
-			} else if isThirparty(im.Path.Value) {
+			} else if isThirdparty(im.Path.Value) {
 				thirdpartyPkg = append(thirdpartyPkg, im)
 			} else {
 				innerPkg = append(innerPkg, im)
@@ -159,7 +172,7 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 
 	ok := cf.SetLines(st.lines)
 	if !ok {
-		log.Printf("setlines faile")
+		log.Print("setlines failed\n")
 	}
 
 	return results
@@ -256,21 +269,10 @@ func deduline(lines []int) []int {
 	return lines
 }
 
-func isThirparty(path string) bool {
-	for _, pkg := range thirdpartyPrefix {
-		if strings.HasPrefix(path, `"`+pkg) {
-			return true
-		}
-	}
-	return false
-}
+var thirdPartRegex = regexp.MustCompile(`^"[a-z]+\.[a-z\.]+`)
 
-var thirdpartyPrefix = []string{
-	"github",
-	"gitlab",
-	"gopkg",
-	"golang",
-	"google.golang.org",
+func isThirdparty(path string) bool {
+	return thirdPartRegex.MatchString(path)
 }
 
 // Sorter gogimport sorter
@@ -282,14 +284,10 @@ type Sorter struct {
 	f        *ast.File
 }
 
-// interger const
+// integer const
 const (
 	MaxUint64 = ^uint64(0)
-	MinUint64 = 0
 	MaxInt64  = int64(MaxUint64 >> 1)
-	MinInt64  = -MaxInt64 - 1
 	MaxUint   = ^uint(0)
-	MinUint   = 0
 	MaxInt    = int(MaxUint >> 1)
-	MinInt    = -MaxInt - 1
 )
