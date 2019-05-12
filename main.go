@@ -269,7 +269,7 @@ func deduline(lines []int) []int {
 	return lines
 }
 
-var thirdPartRegex = regexp.MustCompile(`^"[a-z]+\.[a-z\.]+`)
+var thirdPartRegex = regexp.MustCompile(`^"([0-9a-zA-Z]+\.)+[0-9a-zA-Z]+(/.+)+"$`)
 
 func isThirdparty(path string) bool {
 	return thirdPartRegex.MatchString(path)
