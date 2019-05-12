@@ -110,7 +110,7 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		case *ast.ImportSpec:
 			if strings.HasPrefix(im.Path.Value, `"`+st.rootPkg) {
 				appPkg = append(appPkg, im)
-			} else if isThirdparty(im.Path.Value) {
+			} else if isThirdParty(im.Path.Value) {
 				thirdpartyPkg = append(thirdpartyPkg, im)
 			} else {
 				innerPkg = append(innerPkg, im)
@@ -271,7 +271,7 @@ func deduline(lines []int) []int {
 
 var thirdPartRegex = regexp.MustCompile(`^"([0-9a-zA-Z]+\.)+[0-9a-zA-Z]+(/.+)+"$`)
 
-func isThirdparty(path string) bool {
+func isThirdParty(path string) bool {
 	return thirdPartRegex.MatchString(path)
 }
 
