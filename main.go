@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"flag"
+	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -22,7 +23,7 @@ const defaultLocal = "code.yunzhanghu.com"
 
 var rootPkg = flag.String("local", "", "local package name")
 
-func main() {
+func tmain() {
 	flag.Parse()
 	argIdx := 3
 	if *rootPkg == "" {
@@ -62,6 +63,8 @@ func formatFile(fileName string) {
 
 	st.sortImports()
 
+	st.addFuncNameComment()
+
 	st.addCommentSpace()
 
 	err = st.Write(file)
@@ -87,6 +90,45 @@ func (st *Sorter) sortImports() {
 		specs := d.Specs[:0]
 		specs = append(specs, st.sortSpecs(d.Specs[0:])...)
 		d.Specs = specs
+	}
+}
+
+func (st *Sorter) addFuncNameComment() {
+	for _, d := range st.f.Decls {
+		d, ok := d.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+		// 没有日志的不处理
+		if d.Doc == nil {
+			continue
+		}
+		// 暂时只处理第一行,后续可以处理多行
+		for _, item := range d.Doc.List {
+			if !strings.HasPrefix(item.Text, "//") {
+				continue
+			}
+			if len(item.Text) == 2 {
+				item.Text = "// " + d.Name.Name + " "
+				break
+			}
+			sub := item.Text[2:]
+			if !strings.HasPrefix(sub, " ") {
+				sub = " " + sub
+			}
+			if !strings.HasPrefix(sub, " "+d.Name.Name) {
+				if regexp.MustCompile(fmt.Sprintf(`(?i)^ (%s)`, d.Name.Name)).MatchString(sub) {
+					sub = " " + d.Name.Name + sub[len(" "+d.Name.Name):]
+				} else {
+					sub = " " + d.Name.Name + sub[1:]
+				}
+			}
+			if !strings.HasPrefix(sub, " "+d.Name.Name+" ") {
+				sub = " " + d.Name.Name + " " + sub[len(" "+d.Name.Name):]
+			}
+			item.Text = "//" + sub
+			break
+		}
 	}
 }
 
