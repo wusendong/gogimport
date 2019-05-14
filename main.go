@@ -136,7 +136,7 @@ func (st *Sorter) addCommentSpace() {
 	for _, cg := range st.f.Comments {
 		for _, cm := range cg.List {
 			runeStr := []rune(cm.Text)
-			if (strings.HasPrefix(cm.Text, "//") || strings.HasPrefix(cm.Text, "/*")) && len(runeStr) > 2 && runeStr[2] != ' ' {
+			if strings.HasPrefix(cm.Text, "//") && len(runeStr) > 2 && runeStr[2] != ' ' {
 				runeStr = append(runeStr[:2], append([]rune{' '}, runeStr[2:]...)...)
 				cm.Text = string(runeStr)
 			}
