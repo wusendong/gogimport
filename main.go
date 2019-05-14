@@ -62,6 +62,8 @@ func formatFile(fileName string) {
 
 	st.sortImports()
 
+	st.addCommentSpace()
+
 	err = st.Write(file)
 	if err != nil {
 		log.Printf("write error %v", err.Error())
@@ -75,7 +77,6 @@ func (st *Sorter) sortImports() {
 		if !ok || d.Tok != token.IMPORT {
 			break
 		}
-
 		if !d.Lparen.IsValid() {
 			continue
 		}
@@ -86,6 +87,18 @@ func (st *Sorter) sortImports() {
 		specs := d.Specs[:0]
 		specs = append(specs, st.sortSpecs(d.Specs[0:])...)
 		d.Specs = specs
+	}
+}
+
+func (st *Sorter) addCommentSpace() {
+	for _, cg := range st.f.Comments {
+		for _, cm := range cg.List {
+			runeStr := []rune(cm.Text)
+			if (strings.HasPrefix(cm.Text, "//") || strings.HasPrefix(cm.Text, "/*")) && len(runeStr) > 2 && runeStr[2] != ' ' {
+				runeStr = append(runeStr[:2], append([]rune{' '}, runeStr[2:]...)...)
+				cm.Text = string(runeStr)
+			}
+		}
 	}
 }
 
