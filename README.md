@@ -42,3 +42,9 @@ Options:
 Example command:
 gogimport -local ${packaname} some.go other.go
 ```
+
+### vscode 配置
+
+<div align="center">    
+ <img src="//vscode_example.png" width = "160" height = "200" alt="vscode配置" align=left />
+</div>
