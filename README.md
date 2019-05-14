@@ -30,7 +30,7 @@ import (
 
 ### install
 ```
-go get -u github.com/guangxuewu/gogimport
+go get -u github.com/guangxuewu/gogimport@v1.1.1
 ```
 
 

@@ -23,8 +23,7 @@ const defaultLocal = "code.yunzhanghu.com"
 
 var rootPkg = flag.String("local", "", "local package name")
 
-//
-func tmain() {
+func main() {
 	flag.Parse()
 	argIdx := 3
 	if *rootPkg == "" {
