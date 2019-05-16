@@ -49,5 +49,5 @@ gogimport -local ${packaname} some.go other.go
 ### vscode 配置
 
 <div align="center">    
- <img src="https://raw.githubusercontent.com/guangxuewu/gogimport/master/vscode_example.png" width = "500" height = "600" alt="vscode配置" align=left />
+ <img src="https://github.com/guangxuewu/gogimport/blob/master/png/vscode_example.png?raw=true" width = "500" height = "600" alt="vscode配置" align=left />
 </div>
