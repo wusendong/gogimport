@@ -87,6 +87,34 @@ import (
 )`,
 false,
 		},
+		{
+			"",
+			`package main
+
+import (
+	"github.com/sirusen/barabra"
+	k "gogimport/a/b"
+	"gogimport/a"
+	"io"
+	f "fmt"
+	"net/http"
+	"gogimport/a/b/c"
+)`,
+			`package main
+
+import (
+	f "fmt"
+	"io"
+	"net/http"
+
+	"github.com/sirusen/barabra"
+
+	"gogimport/a"
+	k "gogimport/a/b"
+	"gogimport/a/b/c"
+)`,
+false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -97,7 +125,7 @@ false,
 				return
 			}
 			if string(got)!=tt.want {
-				t.Errorf("formatFromIO() = %q, want %q", got, tt.want)
+				t.Errorf("formatFromIO() = %s, want %s", got, tt.want)
 			}
 		})
 	}
