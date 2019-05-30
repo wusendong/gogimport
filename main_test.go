@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+
 )
 
 func Test_getImportPkg(t *testing.T) {
@@ -60,9 +61,9 @@ func Test_formatFromIO(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		args string
-		want string
+		name    string
+		args    string
+		want    string
 		wantErr bool
 	}{
 		{
@@ -70,10 +71,12 @@ func Test_formatFromIO(t *testing.T) {
 			`package main
 
 import (
-	"github.com/sirusen/barabra"
 	"io"
+
+	"github.com/sirusen/barabra"
 	"gogimport/pkg1"
 	"gogimport/pkg2"
+
 )`,
 			`package main
 
@@ -81,24 +84,25 @@ import (
 	"io"
 
 	"github.com/sirusen/barabra"
-
 	"gogimport/pkg1"
 	"gogimport/pkg2"
+
 )`,
-false,
-		},
+			false},
 		{
 			"",
 			`package main
 
 import (
-	"github.com/sirusen/barabra"
-	k "gogimport/a/b"
-	"gogimport/a"
 	"io"
 	f "fmt"
 	"net/http"
+
+	"github.com/sirusen/barabra"
+	k "gogimport/a/b"
+	"gogimport/a"
 	"gogimport/a/b/c"
+
 )`,
 			`package main
 
@@ -108,13 +112,12 @@ import (
 	"net/http"
 
 	"github.com/sirusen/barabra"
-
 	"gogimport/a"
 	k "gogimport/a/b"
 	"gogimport/a/b/c"
+
 )`,
-false,
-		},
+			false},
 	}
 
 	for _, tt := range tests {
@@ -124,7 +127,7 @@ false,
 				t.Errorf("formatFromIO() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if string(got)!=tt.want {
+			if string(got) != tt.want {
 				t.Errorf("formatFromIO() = %s, want %s", got, tt.want)
 			}
 		})
