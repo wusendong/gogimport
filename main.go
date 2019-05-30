@@ -166,10 +166,19 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		case *ast.ImportSpec:
 			switch {
 			case strings.HasPrefix(im.Path.Value, `"`+st.localPkg):
+				if *verbose {
+					log.Printf("#$ %s", im.Path.Value)
+				}
 				appPkg = append(appPkg, im)
-			case stdPkgs[im.Path.Value]:
+			case stdPkgs[strings.Trim(im.Path.Value, `"`)]:
+				if *verbose {
+					log.Printf("#& %s", im.Path.Value)
+				}
 				innerPkg = append(innerPkg, im)
 			default:
+				if *verbose {
+					log.Printf("#@ %s", im.Path.Value)
+				}
 				thirdpartyPkg = append(thirdpartyPkg, im)
 			}
 			if lowestPos >= im.Pos() {
