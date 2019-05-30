@@ -40,10 +40,7 @@ func fmtMain() error {
 	flag.Parse()
 	if *vflag {
 		fmt.Println(version)
-	}
-	if len(*localPkg) <= 0 {
-		flag.Usage()
-		return fmt.Errorf("local must set")
+		return nil
 	}
 
 	err = initStdPkg()
@@ -103,7 +100,6 @@ func formatFromIO(rd io.Reader) ([]byte, error) {
 	formatLines(lines)
 	buf := linesToBuffer(lines)
 	return buf.Bytes(), nil
-	return format.Source(buf.Bytes())
 }
 
 func scannFileLines(file io.Reader) (*list.List, error) {
