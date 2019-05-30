@@ -54,7 +54,7 @@ func fmtMain() error {
 		if err != nil {
 			return fmt.Errorf("format failed: %v", err)
 		}
-		fmt.Printf("%s\n", out)
+		fmt.Printf("%s", out)
 		return nil
 	}
 	for _, filename := range files {
@@ -67,7 +67,7 @@ func fmtMain() error {
 				return fmt.Errorf("rewrite file failed: %v", err)
 			}
 		} else {
-			fmt.Printf("%s\n", out)
+			fmt.Printf("%s", out)
 			return nil
 		}
 	}
@@ -99,6 +99,7 @@ func formatFromIO(rd io.Reader) ([]byte, error) {
 	}
 	formatLines(lines)
 	buf := linesToBuffer(lines)
+	buf.Write([]byte{'\n'})
 	return buf.Bytes(), nil
 }
 

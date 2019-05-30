@@ -84,10 +84,11 @@ import (
 	"io"
 
 	"github.com/sirusen/barabra"
+
 	"gogimport/pkg1"
 	"gogimport/pkg2"
-
-)`,
+)
+`,
 			false},
 		{
 			"",
@@ -112,11 +113,12 @@ import (
 	"net/http"
 
 	"github.com/sirusen/barabra"
+
 	"gogimport/a"
 	k "gogimport/a/b"
 	"gogimport/a/b/c"
-
-)`,
+)
+`,
 			false},
 	}
 
@@ -128,7 +130,9 @@ import (
 				return
 			}
 			if string(got) != tt.want {
-				t.Errorf("formatFromIO() = %s, want %s", got, tt.want)
+				t.Errorf(`
+got  %q, 
+want %q`, got, tt.want)
 			}
 		})
 	}
