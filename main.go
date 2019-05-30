@@ -3,13 +3,11 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"io"
 	"io/ioutil"
@@ -22,56 +20,101 @@ import (
 	"strings"
 )
 
-var rootPkg = flag.String("local", "", "local package name")
+var localPkg = flag.String("local", "", "local package name")
+var wflag = flag.Bool("w", false, "write result to (source) file instead of stdout")
+var versionflag = flag.Bool("version", false, "print version")
+var verbose = flag.Bool("v", false, "print version")
+
+const version = "gogimport v0.0.2"
 
 func main() {
+	if err := fmtMain(); err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(2)
+	}
+}
+
+func fmtMain() error {
 	var (
 		err error
+		out *bytes.Buffer
 	)
 
 	flag.Parse()
-	if len(*rootPkg) <= 0 {
+	if len(*localPkg) <= 0 {
 		flag.Usage()
-		log.Fatalln("local must set")
+		return fmt.Errorf("local must set")
 	}
 
 	err = initStdPkg()
 	if err != nil {
-		log.Fatalf("init std package failed: %v", err)
+		return fmt.Errorf("init std package failed: %v", err)
 	}
 
 	files := flag.Args()
-	for _, filename := range files {
-		sortFile(filename)
+	if len(files) <= 0 {
+		out, err = formatFromIO("stdin", os.Stdin)
+		if err != nil {
+			return fmt.Errorf("format failed: %v", err)
+		}
+		fmt.Printf("%s", out)
+		return nil
 	}
+
+	for _, filename := range files {
+		err = formatFile(filename)
+		if err != nil {
+			return fmt.Errorf("format failed: %v", err)
+		}
+	}
+	return nil
 }
 
-func sortFile(filename string) {
-	st := &Sorter{
-		filename: filename,
-		rootPkg:  *rootPkg,
-	}
-	log.Printf("sort import for %s %s", st.rootPkg, st.filename)
-
+func formatFile(filename string) error {
 	file, err := os.OpenFile(filename, os.O_RDWR, 644)
-	if nil != err {
-		log.Print("open file " + filename + " error: " + err.Error())
+	if err != nil {
+		return err
 	}
 	defer file.Close()
 
-	err = st.init(file)
+	buf, err := formatFromIO(filename, file)
 	if err != nil {
-		log.Printf("init error: %s", err.Error())
-		return
+		return err
+	}
+
+	if *wflag {
+		_, err = file.Seek(0, 0)
+		if err != nil {
+			return err
+		}
+		err = file.Truncate(int64(buf.Len()))
+		if err != nil {
+			return err
+		}
+		_, err = buf.WriteTo(file)
+		return err
+	}
+	fmt.Printf("%s", buf)
+	return nil
+}
+
+func formatFromIO(filename string, rd io.Reader) (*bytes.Buffer, error) {
+	st := &Sorter{
+		filename: filename,
+		localPkg: *localPkg,
+	}
+
+	if *verbose {
+		log.Printf("sort import from %s", filename)
+	}
+
+	err := st.init(rd)
+	if err != nil {
+		return nil, err
 	}
 
 	st.sortImports()
-
-	err = st.Write(file)
-	if err != nil {
-		log.Printf("write error %s", err.Error())
-		return
-	}
+	return st.toBuffer()
 }
 
 func (st *Sorter) sortImports() {
@@ -122,7 +165,7 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 		switch im := spec.(type) {
 		case *ast.ImportSpec:
 			switch {
-			case strings.HasPrefix(im.Path.Value, `"`+st.rootPkg):
+			case strings.HasPrefix(im.Path.Value, `"`+st.localPkg):
 				appPkg = append(appPkg, im)
 			case stdPkgs[im.Path.Value]:
 				innerPkg = append(innerPkg, im)
@@ -133,7 +176,9 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 				lowestPos = im.Pos()
 			}
 		default:
-			log.Printf("default %v", im)
+			if *verbose {
+				log.Printf("not importSpec: %#v", im)
+			}
 		}
 	}
 
@@ -181,13 +226,17 @@ func (st *Sorter) sortSpecs(specs []ast.Spec) (results []ast.Spec) {
 	size := cf.Size()
 	for i, offset := range st.lines {
 		if i > 0 && offset <= st.lines[i-1] || size <= offset {
-			log.Printf("set line faile. %d, %d, %d, %d", i, offset, st.lines[i-1], size)
+			if *verbose {
+				log.Printf("set line faile. %d, %d, %d, %d", i, offset, st.lines[i-1], size)
+			}
 		}
 	}
 
 	ok := cf.SetLines(st.lines)
 	if !ok {
-		log.Printf("setlines faile")
+		if *verbose {
+			log.Printf("setlines faile")
+		}
 	}
 
 	return results
@@ -198,12 +247,12 @@ func plugPos(p *token.Pos) token.Pos {
 	return *p
 }
 
-func (st *Sorter) init(file *os.File) error {
+func (st *Sorter) init(file io.Reader) error {
 	var err error
 
 	src, err := ioutil.ReadAll(file)
 	if err != nil {
-		return errors.New("read file " + st.filename + " error: " + err.Error())
+		return fmt.Errorf("read from %s error: %v", st.filename, err)
 	}
 	src = append(src, []byte("\n\n\n")...)
 
@@ -217,31 +266,18 @@ func (st *Sorter) init(file *os.File) error {
 	st.fset = token.NewFileSet()
 	st.f, err = parser.ParseFile(st.fset, "", src, parserMode)
 	if err != nil {
-		log.Printf("parse file error :%s", err.Error())
-		return err
+		return fmt.Errorf("parse file error :%s", err.Error())
 	}
 	return nil
 }
 
-func (st *Sorter) Write(file *os.File) error {
+func (st *Sorter) toBuffer() (*bytes.Buffer, error) {
 	var buf = &bytes.Buffer{}
-	if err := printer.Fprint(buf, st.fset, st.f); err != nil {
-		return err
+	if err := format.Node(buf, st.fset, st.f); err != nil {
+		return nil, err
 	}
-	out, err := format.Source(buf.Bytes())
-	if err != nil {
-		return err
-	}
-	_, err = file.Seek(0, 0)
-	if err != nil {
-		return err
-	}
-	err = file.Truncate(int64(buf.Len()))
-	if err != nil {
-		return err
-	}
-	_, err = file.Write(out)
-	return err
+	// buf.WriteByte('\n')
+	return buf, nil
 }
 
 func setPos(pos token.Pos, im *ast.ImportSpec) {
@@ -287,7 +323,7 @@ func deduline(lines []int) []int {
 // Sorter gogimport sorter
 type Sorter struct {
 	filename string
-	rootPkg  string
+	localPkg string
 	lines    []int
 	fset     *token.FileSet
 	f        *ast.File
